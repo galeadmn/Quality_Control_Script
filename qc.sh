@@ -193,14 +193,16 @@ process_hisat2(){
 		do
 			BaseFile=${firstOfPair%_R1_001.fastq.gz}
 			secondOfPair=$BaseFile"_R2_001.fastq.gz"
-			if [ ! -f $secondOfPair ] ; then
-				echo $firstOfPair does not have a matching file! >> $OUTFILE
-				break
-			fi
 			BaseFile=${BaseFile:$PATH_LENGTH}
 			echo >> $OUTFILE
 			echo Alignment pair $BaseFile >> $OUTFILE 
-       		  	hisat_command="$HISAT2 -x $current_index -1 $firstOfPair -2 $secondOfPair -S /dev/null  2> $TEMPFILE"
+			if [ ! -f $secondOfPair ] ; then
+				# Run hisat2 on single read
+       		  		hisat_command="$HISAT2 -x $current_index -U $firstOfPair -S /dev/null  2> $TEMPFILE"
+			else
+				# Run hisat2 on paired reads
+       		  		hisat_command="$HISAT2 -x $current_index -1 $firstOfPair -2 $secondOfPair -S /dev/null  2> $TEMPFILE"
+			fi
 			eval $hisat_command
 			sed -i -e '5,15d;2,3d' $TEMPFILE
 			sed -i -E ':a ; $!N ; s/\n\s+/ / ; ta ; P ; D' $TEMPFILE
@@ -244,10 +246,10 @@ read_index_choice(){
 	local choice
 	read -p "Enter choice [1 - 6] " choice 
 	case $choice in 
-		1) HISAT2_INDEX=$HUMAN_IDX 
-		   INDEX_NAME="HUMAN"  ;;
-		2) HISAT2_INDEX=$RNA_IDX
+		1) HISAT2_INDEX=$RNA_IDX
 		   INDEX_NAME="RNA"    ;;
+		2) HISAT2_INDEX=$HUMAN_IDX 
+		   INDEX_NAME="HUMAN"  ;;
 		3) HISAT2_INDEX=$RHESUS_IDX
 		   INDEX_NAME="RHESUS" ;;
 		4) HISAT2_INDEX=$MOUSE_IDX 
